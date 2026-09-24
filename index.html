@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d0d1a">
+<title>吵架训练场</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0d0d1a;--panel:#1a1a2e;--border:#2a2a4a;
+  --gold:#ffd700;--red:#ff4757;--green:#2ed573;--blue:#1e90ff;
+  --purple:#a55eea;--orange:#ffa502;--text:#e8e8f0;--dim:#666688;
+  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
+}
+html{height:100%;overscroll-behavior:none}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;overflow-x:hidden;min-height:100%;min-height:100dvh;-webkit-font-smoothing:antialiased;position:fixed;inset:0;width:100%;overflow:hidden}
+.screen{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;padding:calc(16px + var(--sat)) 16px calc(16px + var(--sab));overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.screen.active{display:flex}
+.scrollable{justify-content:flex-start;padding-top:calc(24px + var(--sat))}
+
+/* 按钮：加大触控区 */
+.btn{padding:14px 32px;font-size:16px;border:2px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;letter-spacing:3px;transition:background .15s;margin:5px;border-radius:8px;min-height:48px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.btn:active{background:var(--gold);color:#000;transform:scale(.97)}
+.btn.small{padding:10px 20px;font-size:14px;letter-spacing:1px;min-height:42px}
+.btn.danger{border-color:var(--red);color:var(--red)}.btn.danger:active{background:var(--red);color:#fff}
+.btn.blue{border-color:var(--blue);color:var(--blue)}.btn.blue:active{background:var(--blue);color:#fff}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* 标题 */
+.title-wrap{text-align:center;width:100%;max-width:480px}
+.title-wrap h1{font-size:clamp(36px,11vw,52px);font-weight:900;letter-spacing:4px;background:linear-gradient(135deg,var(--gold),var(--red),var(--purple));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+.title-wrap .sub{color:var(--dim);font-size:11px;margin-bottom:18px;letter-spacing:2px}
+.player-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:16px}
+.pstat{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 4px;text-align:center;min-width:0}
+.pstat .pv{font-size:clamp(14px,4vw,18px);font-weight:bold;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pstat .pl{font-size:9px;color:var(--dim);margin-top:2px}
+.stars{color:var(--gold);font-size:clamp(11px,3vw,14px);letter-spacing:1px;white-space:nowrap}
+.title-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.title-btns .btn{width:100%;margin:0;padding:13px 8px;letter-spacing:2px}
+.title-btns .btn:first-child{grid-column:1/-1;font-size:18px;padding:16px 8px}
+.daily-card{background:linear-gradient(135deg,rgba(255,215,0,.1),rgba(165,94,234,.1));border:1px solid rgba(255,215,0,.3);border-radius:12px;padding:12px 14px;width:100%;margin:0 auto 14px;text-align:left}
+.daily-card .dc-title{font-size:12px;color:var(--gold);letter-spacing:2px;margin-bottom:4px}
+.daily-card .dc-body{font-size:13px;line-height:1.5}
+.daily-card .dc-reward{font-size:11px;color:var(--green);margin-top:4px}
+.daily-card.done{opacity:.5}
+.xp-bar-wrap{width:100%;max-width:300px;margin:0 auto 6px;height:8px;background:#111;border-radius:4px;overflow:hidden}
+.xp-bar-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:4px;transition:width .5s}
+.title-badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;background:rgba(165,94,234,.2);color:var(--purple);border:1px solid rgba(165,94,234,.4);margin-bottom:8px}
+
+/* BOSS选择 */
+.select-wrap{width:100%;max-width:480px}
+.select-wrap h2{font-size:22px;letter-spacing:4px;color:var(--gold);margin-bottom:4px;text-align:center}
+.select-wrap .hint{color:var(--dim);font-size:12px;margin-bottom:14px;text-align:center}
+.boss-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.boss-card{background:var(--panel);border:2px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer;transition:border-color .2s;position:relative;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.boss-card:active{border-color:var(--gold)}
+.boss-card.locked{opacity:.4;pointer-events:none}
+.boss-card .avatar{font-size:36px;margin-bottom:6px;float:right;margin-left:10px}
+.boss-card .name{font-size:17px;font-weight:bold;margin-bottom:2px}
+.boss-card .btitle{font-size:11px;color:var(--dim);margin-bottom:6px}
+.boss-card .desc{font-size:12px;color:#999;line-height:1.5;margin-bottom:8px;clear:none}
+.boss-card .bstats{display:flex;gap:10px;font-size:11px;color:var(--dim)}
+.boss-card .bstats span{color:var(--text);font-weight:bold}
+.boss-card .weak{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:10px;font-size:11px;background:rgba(165,94,234,.15);color:var(--purple);border:1px solid rgba(165,94,234,.3)}
+.boss-card .wc{position:absolute;top:10px;left:14px;font-size:10px;color:var(--green);background:rgba(46,213,115,.12);padding:2px 7px;border-radius:8px}
+.back-row{margin-top:16px;text-align:center;width:100%}
+
+/* 战斗：上半对战 + 底部固定输入 */
+.battle-screen{padding:calc(8px + var(--sat)) 10px 0;justify-content:flex-start;overflow:hidden;touch-action:none}
+.battle-top{width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:6px;flex-shrink:0}
+.battle-top .stage-info{font-size:11px;color:var(--dim);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.battle-top .turn-info{font-size:11px;color:var(--blue);flex-shrink:0}
+.combo-display{font-size:13px;font-weight:bold;color:var(--orange);letter-spacing:1px;flex-shrink:0}
+.combo-display.hot{animation:comboPulse .4s ease infinite;color:var(--gold)}
+@keyframes comboPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+
+.hp-section{width:100%;max-width:560px;display:flex;flex-direction:column;gap:6px;margin-bottom:6px;flex-shrink:0}
+.hp-row{display:flex;align-items:center;gap:6px}
+.hp-row .hname{width:76px;font-size:12px;font-weight:bold;text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-row .hname.player{color:var(--blue)}.hp-row .hname.enemy{color:var(--red)}
+.hp-bar{flex:1;height:18px;background:#111;border:2px solid var(--border);border-radius:9px;overflow:hidden;position:relative}
+.hp-fill{height:100%;transition:width .5s cubic-bezier(.4,0,.2,1);border-radius:7px}
+.hp-fill.player{background:linear-gradient(90deg,var(--blue),var(--green))}
+.hp-fill.enemy{background:linear-gradient(90deg,var(--red),var(--orange))}
+.hp-fill.phase2{background:linear-gradient(90deg,var(--red),var(--purple))}
+.hp-text{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:10px;color:#fff;font-weight:bold;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+
+.arena{width:100%;max-width:560px;background:var(--panel);border:2px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.msg{max-width:88%;padding:8px 12px;border-radius:12px;font-size:14px;line-height:1.55;animation:fadeIn .3s;word-break:break-word}
+.msg.enemy{background:rgba(255,71,87,.12);border:1px solid rgba(255,71,87,.25);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.player{background:rgba(30,144,255,.12);border:1px solid rgba(30,144,255,.25);align-self:flex-end;border-bottom-right-radius:4px}
+.msg .speaker{font-size:10px;color:var(--dim);margin-bottom:3px}
+.msg.system{align-self:center;background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.25);color:var(--gold);font-size:12px;max-width:95%;text-align:center}
+.msg.phase{align-self:center;background:rgba(255,71,87,.15);border:2px solid rgba(255,71,87,.5);color:var(--red);font-size:15px;font-weight:bold;max-width:95%;text-align:center;letter-spacing:2px;animation:phaseIn .5s ease}
+@keyframes phaseIn{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* 卡牌：横向滚动 */
+.card-hand{width:100%;max-width:560px;display:flex;gap:6px;margin-bottom:6px;flex-wrap:nowrap;min-height:46px;align-items:center;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x;flex-shrink:0;padding-bottom:2px;scrollbar-width:none}
+.card-hand::-webkit-scrollbar{display:none}
+.card-hand .ch-label{font-size:11px;color:var(--dim);flex-shrink:0}
+.rhet-card{padding:7px 12px;background:linear-gradient(135deg,rgba(255,215,0,.12),rgba(255,165,2,.08));border:1px solid rgba(255,215,0,.4);border-radius:10px;cursor:pointer;font-size:13px;color:var(--gold);flex-shrink:0;user-select:none;-webkit-user-select:none;touch-action:manipulation;min-height:40px}
+.rhet-card:active{background:rgba(255,215,0,.25)}
+.rhet-card.armed{border-color:var(--green);color:var(--green);background:rgba(46,213,115,.15);box-shadow:0 0 10px rgba(46,213,113,.3)}
+.rhet-card.used{opacity:.3;pointer-events:none;text-decoration:line-through}
+.rhet-card .cdesc{display:block;font-size:10px;color:var(--dim);margin-top:1px}
+.rhet-card.armed .cdesc{color:rgba(46,213,115,.7)}
+
+/* 底部固定输入区 */
+.battle-bottom{width:100%;max-width:560px;flex-shrink:0;padding:6px 0 calc(8px + var(--sab));background:linear-gradient(transparent,var(--bg) 20%)}
+.input-section{width:100%;display:flex;gap:8px;align-items:flex-end}
+.input-section textarea{flex:1;background:#111;border:2px solid var(--border);border-radius:10px;color:var(--text);padding:10px 12px;font-size:16px;font-family:inherit;resize:none;height:72px;outline:none;transition:border-color .2s;line-height:1.4}
+.input-section textarea:focus{border-color:var(--blue)}
+.input-section textarea::placeholder{color:var(--dim);font-size:14px}
+.send-btn{padding:0 20px;height:72px;background:var(--blue);border:none;color:#fff;font-size:16px;font-weight:bold;border-radius:10px;cursor:pointer;letter-spacing:2px;flex-shrink:0;min-width:72px;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.send-btn:active{background:#3aa0ff;transform:scale(.96)}
+.send-btn:disabled{background:var(--dim)}
+.tips-row{width:100%;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;margin-top:6px;scrollbar-width:none;padding-bottom:2px;touch-action:pan-x}
+.tips-row::-webkit-scrollbar{display:none}
+.tip-btn{padding:4px 10px;background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.25);color:var(--gold);font-size:11px;border-radius:10px;white-space:nowrap;flex-shrink:0}
+
+/* 伤害飘字 */
+.dmg-float{position:fixed;font-size:28px;font-weight:900;pointer-events:none;animation:dmgUp 1s ease-out forwards;z-index:999}
+.dmg-float.crit{color:var(--gold);font-size:36px}.dmg-float.hit{color:var(--red)}.dmg-float.heal{color:var(--green)}
+.dmg-float.combo{color:var(--orange);font-size:32px}
+@keyframes dmgUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-70px) scale(1.3)}}
+.shake{animation:shake .3s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.screen-flash{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,215,0,.3);pointer-events:none;animation:flashOut .3s forwards;z-index:998}
+@keyframes flashOut{to{opacity:0}}
+
+/* 结算 */
+.result-screen{padding:calc(20px + var(--sat)) 14px calc(20px + var(--sab));text-align:center}
+.result-screen h2{font-size:32px;font-weight:900;letter-spacing:4px;margin-bottom:4px}
+.result-screen h2.win{color:var(--gold)}.result-screen h2.lose{color:var(--red)}
+.result-screen .rsub{color:var(--dim);margin-bottom:14px;font-size:12px}
+.xp-gain{font-size:15px;color:var(--blue);margin-bottom:6px;animation:fadeIn .5s}
+.levelup{font-size:20px;color:var(--gold);font-weight:900;letter-spacing:2px;margin-bottom:10px;animation:comboPulse .6s ease 3}
+.newcards{font-size:13px;color:var(--green);margin-bottom:10px}
+.rankup{font-size:18px;color:var(--gold);font-weight:900;letter-spacing:2px;margin-bottom:10px;animation:comboPulse .8s ease infinite}
+.result-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;width:100%;max-width:480px;margin-bottom:12px;text-align:left}
+.result-box h3{font-size:13px;color:var(--gold);margin-bottom:10px;letter-spacing:2px}
+.score-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.score-row .slabel{width:42px;font-size:12px;color:var(--dim);text-align:right;flex-shrink:0}
+.score-bar{flex:1;height:12px;background:#111;border-radius:6px;overflow:hidden}
+.score-fill{height:100%;border-radius:6px;transition:width .8s ease}
+.score-fill.sf-s{background:var(--green)}.score-fill.sf-l{background:var(--blue)}.score-fill.sf-p{background:var(--orange)}.score-fill.sf-o{background:linear-gradient(90deg,var(--blue),var(--gold))}
+.score-row .sval{width:36px;font-size:13px;font-weight:bold;text-align:left}
+.review-item{padding:8px 10px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:6px;font-size:12px;line-height:1.5;border-left:3px solid var(--border)}
+.review-item.good{border-left-color:var(--green)}.review-item.bad{border-left-color:var(--red)}
+.review-item .rv-label{font-size:10px;font-weight:bold;margin-bottom:2px}
+.review-item.good .rv-label{color:var(--green)}.review-item.bad .rv-label{color:var(--red)}
+.final-msg{background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.25);border-radius:8px;padding:10px;margin-top:8px}
+.final-msg .fm-title{font-size:12px;color:var(--gold);margin-bottom:6px}
+.final-msg .fm-text{font-size:13px;line-height:1.7;color:#ddd;white-space:pre-wrap;word-break:break-word}
+.copy-btn{margin-top:8px;padding:10px 22px;background:var(--gold);border:none;color:#000;font-size:14px;font-weight:bold;border-radius:8px;min-height:40px;touch-action:manipulation}
+.copy-btn:active{transform:scale(.96)}
+.result-buttons{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;width:100%;max-width:480px}
+.result-buttons .btn{flex:1;min-width:120px}
+
+/* 战绩 */
+.history-list{max-width:480px;width:100%;display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.history-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--panel);border:1px solid var(--border);border-radius:10px}
+.history-item .h-avatar{font-size:22px}.history-item .h-info{flex:1;min-width:0}
+.history-item .h-name{font-size:14px;font-weight:bold}.history-item .h-meta{font-size:11px;color:var(--dim)}
+.history-item .h-result{font-size:12px;font-weight:bold;padding:4px 10px;border-radius:6px;flex-shrink:0}
+.history-item .h-result.win{color:var(--green);background:rgba(46,213,115,.12)}
+.history-item .h-result.lose{color:var(--red);background:rgba(255,71,87,.12)}
+.history-empty{color:var(--dim);text-align:center;padding:30px;font-size:13px}
+
+/* 图鉴 */
+.collection-wrap{width:100%;max-width:480px}
+.collection-wrap h2{font-size:22px;letter-spacing:4px;color:var(--gold);margin-bottom:4px;text-align:center}
+.collection-wrap .hint{color:var(--dim);font-size:12px;margin-bottom:14px;text-align:center}
+.coll-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:14px}
+.coll-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px}
+.coll-card .cc-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.coll-card .cc-avatar{font-size:26px}
+.coll-card .cc-name{font-size:15px;font-weight:bold}
+.coll-card .cc-count{font-size:11px;color:var(--green);margin-left:auto}
+.coll-card .cc-quote{font-size:12px;color:#aaa;line-height:1.5;padding:6px 8px;background:rgba(255,255,255,.03);border-radius:6px;margin-bottom:4px;border-left:2px solid var(--gold);word-break:break-word}
+.coll-card .cc-quote .qlabel{font-size:9px;color:var(--gold);display:block;margin-bottom:2px}
+.coll-card .cc-defeat{font-size:11px;color:var(--dim);font-style:italic}
+.coll-card .cc-empty{font-size:11px;color:var(--dim);font-style:italic}
+.titles-section{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px}
+.titles-section h3{font-size:13px;color:var(--gold);margin-bottom:10px;letter-spacing:2px}
+.title-list{display:flex;gap:8px;flex-wrap:wrap}
+.title-chip{padding:8px 14px;border-radius:14px;font-size:12px;border:1px solid var(--border);color:var(--dim);transition:all .2s;min-height:36px;touch-action:manipulation}
+.title-chip.unlocked{border-color:var(--purple);color:var(--purple);background:rgba(165,94,234,.1)}
+.title-chip.unlocked:active,.title-chip.equipped{background:rgba(165,94,234,.25);border-color:var(--purple)}
+.title-chip.equipped{box-shadow:0 0 8px rgba(165,94,234,.4)}
+.title-chip.locked{opacity:.4;pointer-events:none}
+
+/* 设置 */
+.settings-wrap{width:100%;max-width:420px;text-align:center}
+.settings-wrap h2{font-size:22px;letter-spacing:4px;color:var(--gold);margin-bottom:4px}
+.settings-wrap .hint{color:var(--dim);font-size:12px;margin-bottom:14px}
+.api-status{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;text-align:left;font-size:13px}
+.api-input{width:100%;padding:12px;background:#111;border:2px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;outline:none;margin-bottom:8px}
+.api-help{font-size:11px;color:var(--dim);line-height:1.6;text-align:left;margin-bottom:12px}
+.api-help a{color:var(--blue)}
+.settings-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<!-- 标题 -->
+<div class="screen active" id="titleScreen">
+  <div class="title-wrap">
+    <div class="title-badge" id="equippedTitle" style="display:none"></div>
+    <h1>吵架训练场</h1>
+    <div class="sub">ARGUMENT TRAINING GROUND</div>
+
+    <div class="xp-bar-wrap"><div class="xp-bar-fill" id="xpFill" style="width:0%"></div></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:14px" id="xpText">Lv.1</div>
+
+    <div class="player-bar">
+      <div class="pstat"><div class="pv" id="rankName">青铜</div><div class="pl">段位</div></div>
+      <div class="pstat"><div class="stars" id="starDisplay">★★★</div><div class="pl">星级</div></div>
+      <div class="pstat"><div class="pv" id="streakDisplay">0</div><div class="pl">连胜</div></div>
+      <div class="pstat"><div class="pv" id="levelDisplay">1</div><div class="pl">等级</div></div>
+      <div class="pstat"><div class="pv" id="collDisplay">0/6</div><div class="pl">图鉴</div></div>
+    </div>
+
+    <div class="daily-card" id="dailyCard">
+      <div class="dc-title">每日挑战</div>
+      <div class="dc-body" id="dailyBody">加载中...</div>
+      <div class="dc-reward" id="dailyReward">奖励：双倍段位分 + 双倍经验</div>
+      <button class="btn small" id="dailyGoBtn" style="margin-top:8px;padding:8px 18px;font-size:13px" onclick="startDailyBattle()">接受挑战</button>
+    </div>
+
+    <div class="title-btns">
+      <button class="btn" onclick="showSelect()">开始训练</button>
+      <button class="btn" onclick="showCollection()">图鉴</button>
+      <button class="btn" onclick="showHistory()">战绩</button>
+      <button class="btn" onclick="showSettings()">AI 设置</button>
+    </div>
+  </div>
+</div>
+
+<!-- 选择 -->
+<div class="screen scrollable" id="selectScreen">
+  <div class="select-wrap">
+    <h2>选择对手</h2>
+    <div class="hint">每个BOSS有弱点和二阶段狂暴形态</div>
+    <div class="boss-grid" id="bossGrid"></div>
+    <div class="back-row"><button class="btn small" onclick="showTitle()">返回</button></div>
+  </div>
+</div>
+
+<!-- 战斗 -->
+<div class="screen battle-screen" id="battleScreen">
+  <div class="battle-top">
+    <div class="stage-info" id="stageInfo"></div>
+    <div class="combo-display" id="comboDisplay"></div>
+    <div class="turn-info" id="turnInfo">回合 1</div>
+    <button class="btn small danger" style="padding:3px 12px;font-size:11px" onclick="fleeBattle()">撤退</button>
+  </div>
+
+  <div class="hp-section">
+    <div class="hp-row">
+      <div class="hname enemy" id="enemyName">对手</div>
+      <div class="hp-bar"><div class="hp-fill enemy" id="enemyHpFill" style="width:100%"></div><div class="hp-text" id="enemyHpText"></div></div>
+    </div>
+    <div class="hp-row">
+      <div class="hname player">你</div>
+      <div class="hp-bar"><div class="hp-fill player" id="playerHpFill" style="width:100%"></div><div class="hp-text" id="playerHpText"></div></div>
+    </div>
+  </div>
+
+  <div class="arena" id="arena"></div>
+  <div class="card-hand" id="cardHand"></div>
+
+  <div class="battle-bottom">
+    <div class="input-section">
+      <textarea id="playerInput" placeholder="输入你的回应…" onkeydown="handleKey(event)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendReply()">出手</button>
+    </div>
+    <div class="tips-row" id="tipsRow"></div>
+  </div>
+</div>
+
+<!-- 结算 -->
+<div class="screen result-screen scrollable" id="resultScreen">
+  <h2 id="resultTitle" class="win">胜利</h2>
+  <div class="rsub" id="resultSub"></div>
+  <div class="rankup" id="rankUp" style="display:none"></div>
+  <div class="levelup" id="levelUp" style="display:none"></div>
+  <div class="xp-gain" id="xpGain"></div>
+  <div class="newcards" id="newCards" style="display:none"></div>
+
+  <div class="result-box">
+    <h3>战斗评分</h3>
+    <div class="score-row"><div class="slabel">攻势</div><div class="score-bar"><div class="score-fill sf-s" id="scS" style="width:0%"></div></div><div class="sval" id="vS">0</div></div>
+    <div class="score-row"><div class="slabel">逻辑</div><div class="score-bar"><div class="score-fill sf-l" id="scL" style="width:0%"></div></div><div class="sval" id="vL">0</div></div>
+    <div class="score-row"><div class="slabel">体面</div><div class="score-bar"><div class="score-fill sf-p" id="scP" style="width:0%"></div></div><div class="sval" id="vP">0</div></div>
+    <div class="score-row"><div class="slabel">综合</div><div class="score-bar"><div class="score-fill sf-o" id="scO" style="width:0%"></div></div><div class="sval" id="vO">0</div></div>
+  </div>
+
+  <div class="result-box">
+    <h3>逐句复盘</h3>
+    <div id="reviewList"></div>
+    <div class="final-msg">
+      <div class="fm-title">推荐话术（可复制）</div>
+      <div class="fm-text" id="finalMsg"></div>
+      <button class="copy-btn" onclick="copyFinal()">复制</button>
+    </div>
+  </div>
+
+  <div class="result-buttons">
+    <button class="btn small" onclick="showSelect()">继续挑战</button>
+    <button class="btn small" onclick="showTitle()">回首页</button>
+  </div>
+</div>
+
+<!-- 战绩 -->
+<div class="screen scrollable" id="historyScreen">
+  <div style="text-align:center;margin-bottom:16px"><h2 style="font-size:26px;letter-spacing:5px;color:var(--gold)">战绩</h2></div>
+  <div class="history-list" id="historyList"></div>
+  <div class="back-row" style="margin-top:16px">
+    <button class="btn small" onclick="showTitle()">返回</button>
+    <button class="btn small danger" onclick="clearHistory()">清空</button>
+  </div>
+</div>
+
+<!-- 图鉴 -->
+<div class="screen scrollable" id="collectionScreen">
+  <div class="collection-wrap">
+    <h2>图鉴</h2>
+    <div class="hint">收集每个BOSS的最强回击和击败语录</div>
+    <div class="titles-section">
+      <h3>称号</h3>
+      <div class="title-list" id="titleList"></div>
+    </div>
+    <div class="coll-grid" id="collGrid"></div>
+    <div class="back-row"><button class="btn small" onclick="showTitle()">返回</button></div>
+  </div>
+</div>
+
+<!-- 设置 -->
+<div class="screen" id="settingsScreen">
+  <div class="settings-wrap">
+    <h2>AI 设置</h2>
+    <div class="hint">接入免费大模型后BOSS动态回击、AI评分<br>不填则用关键词模式</div>
+    <div class="api-status" id="apiStatus">当前：离线模式</div>
+    <div style="text-align:left;margin-bottom:10px">
+      <div style="font-size:12px;color:var(--dim);margin-bottom:4px">API Key（智谱 GLM-Flash 免费）</div>
+      <input type="password" class="api-input" id="apiKeyInput" placeholder="粘贴 API Key...">
+      <div class="api-help">
+        获取：<a href="https://open.bigmodel.cn" target="_blank">open.bigmodel.cn</a> → 注册 → API Keys → 创建<br>
+        GLM-4-Flash 免费，国内直连
+      </div>
+    </div>
+    <div class="settings-btns">
+      <button class="btn small" onclick="saveApiKey()">保存并测试</button>
+      <button class="btn small danger" onclick="clearApiKey()">清除</button>
+      <button class="btn small" onclick="showTitle()">返回</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════ BOSS ═══════════
+const BOSSES = [
+  {id:'boss1',avatar:'👔',name:'画饼老板',title:'第一关 · 职场篇',desc:'擅长用"未来可期"压榨你，永不兑现承诺。',
+   desc2:'被戳穿后恼羞成怒，开始威胁调岗、边缘化、给你穿小鞋。',
+   hp:100,difficulty:1,unlockAt:0,weakness:'logic',weakLabel:'弱点：数据和事实',
+   openers:['小王啊，这个项目好好干，年底肯定不会亏待你的。加班是福报。','我知道现在工资不高，但你在成长啊。等公司上市大家都有期权。','别老提钱，格局要大。我当年也是这么过来的。'],
+   replies:['你这个想法不太成熟，年轻人不要太浮躁。','我说的都是为你好，发展空间很大的。','先把这个季度做出来，到时候再谈好不好？','你看看别的同事，从不抱怨这些。','我承认有困难，但困难是暂时的。','不是不给你涨，是时机不对，再等等。'],
+   defeat:'行吧，你说得有道理，我让HR看看预算……',
+   defeat2:'你……你等着！我记住了！（气急败坏地走了）',
+   tips:['摆出具体数据和工时','要求书面承诺','引用劳动法','不要被"格局"PUA']},
+  {id:'boss2',avatar:'👩‍👧',name:'催婚亲戚',title:'第二关 · 春节篇',desc:'每年春节准时出现，三大灵魂拷问。',
+   desc2:'被顶嘴后开始哭闹，说你不孝、白养你了、以后别回家。',
+   hp:80,difficulty:2,unlockAt:1,weakness:'polite',weakLabel:'弱点：礼貌但坚定',
+   openers:['哎呀，都这么大了还不找对象？隔壁小李孩子都会打酱油了！','女孩子过了30就不好找了，眼光别太高。','你爸妈多操心啊，不孝有三无后为大！'],
+   replies:['你就是太挑了，怪不得没人要。','我给你介绍的那个公务员多好啊！','我们都是为你好，以后会感谢我们的。','你看你表弟，二胎都生了。你呢？','现在年轻人不结婚，老了谁照顾你？','今年必须带对象回来，不然别回来了！'],
+   defeat:'好好好，你们年轻人有主见，我不管了……',
+   defeat2:'呜呜呜……我白操心了！你这个不孝的！（抹泪）',
+   tips:['感谢关心但划清边界','反问对方生活','用幽默化解','态度温和立场坚定']},
+  {id:'boss3',avatar:'😏',name:'阴阳同事',title:'第三关 · 办公室篇',desc:'表面笑嘻嘻，背后捅刀子。',
+   desc2:'被挑明后撕破脸，开始公开阴阳、拉踩、联合孤立你。',
+   hp:90,difficulty:3,unlockAt:3,weakness:'direct',weakLabel:'弱点：直接挑明',
+   openers:['哎呀，这方案是你做的吗？我以为是小张做的呢～','领导夸你了诶，不过换谁来做都一样吧？','你最近是不是很闲？天天准时下班，真羡慕啊。'],
+   replies:['你想多了，我就是随口一说，你怎么这么敏感？','我这人说话直，别介意哈。','你要是觉得我在针对你，那我也没办法。','领导面前我可没说什么啊，别误会。','开个玩笑而已，现在的年轻人真开不起玩笑。','行行行，都是我的错，行了吧？'],
+   defeat:'哎呀你这人怎么这么较真……算了当我没说。',
+   defeat2:'好好好，你厉害，你清高！我惹不起还躲不起吗！',
+   tips:['当场挑破不给模糊空间','用事实回击暗示','不要自证，反问对方','录音留证']},
+  {id:'boss4',avatar:'🏠',name:'抠门房东',title:'第四关 · 租房篇',desc:'押金不退、乱扣维修费、涨租理直气壮。',
+   desc2:'被顶住后威胁扣光押金、不退房、找人来闹。',
+   hp:70,difficulty:4,unlockAt:5,weakness:'strong',weakLabel:'弱点：态度强硬',
+   openers:['押金不能全退，墙上这个印子得扣500。','下个月房租涨500，现在什么都涨价。','合同是死的人是活的嘛，好商量。'],
+   replies:['你住了这么久才坏，说不定是你自己弄的。','我不管合同怎么写，我说了算！','不满意可以搬走，大把人等着租。','维修费花了800，从押金里扣。','市场价就这样，不租有的是人租。','我也不想为难你，但规矩就是规矩。'],
+   defeat:'行了行了，按合同来行了吧，你这人怎么这么硬……',
+   defeat2:'你再逼我我就……我就……算了算了怕了你了！',
+   tips:['引用合同条款','提到12345/住建委投诉','态度毫不退让','保留聊天记录']},
+  {id:'boss5',avatar:'😡',name:'无理客户',title:'第五关 · 终极篇',desc:'差评威胁、情绪勒索、已使用还要退款。',
+   desc2:'升级威胁：发微博曝光、打12315、找媒体、堵公司门。',
+   hp:120,difficulty:5,unlockAt:8,weakness:'logic',weakLabel:'弱点：流程和规则',
+   openers:['我要求全额退款！你们根本没用，我要投诉消协！','我花了这么多钱就得到这个？骗子！','今天必须解决，不然我发到网上让所有人看！'],
+   replies:['必须给我解决，不然我打12315！','让你们领导来跟我说话！你级别不够！','我不管流程，快点处理！','我要曝光你们！发抖音发微博！','已经用了怎么了？什么霸王条款！','打1星差评，让你们生意做不下去！'],
+   defeat:'哼，这次就算了，下次绝不客气……',
+   defeat2:'你给我等着！我这就发微博！（掏出手机）',
+   tips:['保持冷静不被带走','引用售后流程','给出替代方案','全程留文字记录']},
+  {id:'boss6',avatar:'🤡',name:'PUA大师',title:'隐藏关 · 情感篇',desc:'贬低你的价值、制造愧疚感，让你觉得离开ta是损失。',
+   desc2:'彻底爆发：疯狂贬低、翻旧账、威胁毁掉你的社交圈。',
+   hp:150,difficulty:6,unlockAt:12,weakness:'direct',weakLabel:'弱点：清醒认知',
+   openers:['你离开我能找到更好的吗？看看你自己什么样。','我生气还不是因为在乎你？换别人我理都不理。','每次都是我迁就你，你太自私了。'],
+   replies:['你要是敢走，以后别哭着回来求我。','除了我谁忍受你？也就我要你。','我为你付出这么多，你良心呢？','你每次都这样，说一套做一套。','你走啊，我看你能撑几天。','你就是被短视频洗脑了，谁跟你一样作？'],
+   defeat:'……也许你说得对，我确实有点过分了。',
+   defeat2:'好好好！你走！我看你离了我能不能活！（摔东西）',
+   tips:['不要自证价值','识别情感勒索','设定不可逾越的底线','必要时直接结束']},
+];
+
+// ═══════════ 话术牌 ═══════════
+const CARDS = [
+  {id:'argue',name:'据理力争',desc:'伤害×1.5',unlockLevel:1,effect:'dmg15'},
+  {id:'counter_q',name:'反问',desc:'对方反击为0',unlockLevel:1,effect:'no_counter'},
+  {id:'silence',name:'沉默是金',desc:'跳过对方反击',unlockLevel:3,effect:'skip_counter'},
+  {id:'data_bomb',name:'数据轰炸',desc:'逻辑+25',unlockLevel:4,effect:'logic25'},
+  {id:'deflect',name:'转移话题',desc:'恢复15HP',unlockLevel:4,effect:'heal15'},
+  {id:'legal',name:'法律武器',desc:'伤害×2',unlockLevel:6,effect:'dmg2x'},
+  {id:'vital',name:'直击要害',desc:'必定暴击',unlockLevel:8,effect:'guaranteed_crit'},
+  {id:'comeback',name:'绝地反击',desc:'HP<30%伤害×3',unlockLevel:10,effect:'comeback'},
+];
+
+// ═══════════ 段位 ═══════════
+const RANKS = [
+  {name:'青铜',icon:'🥉'},{name:'白银',icon:'🥈'},{name:'黄金',icon:'🥇'},
+  {name:'铂金',icon:'💎'},{name:'钻石',icon:'🔹'},{name:'星耀',icon:'⭐'},{name:'王者',icon:'👑'},
+];
+
+// ═══════════ 称号 ═══════════
+const TITLES = [
+  {id:'rookie',name:'吵架新兵',desc:'完成首战',check:d=>d.totalBattles>=1},
+  {id:'veteran',name:'百战老手',desc:'完成10场',check:d=>d.totalBattles>=10},
+  {id:'streak5',name:'五连胜',desc:'5连胜',check:d=>d.bestStreak>=5},
+  {id:'streak10',name:'不败战神',desc:'10连胜',check:d=>d.bestStreak>=10},
+  {id:'perfect',name:'完美回击者',desc:'打出90+评分',check:d=>d.hasPerfect},
+  {id:'collector',name:'图鉴收藏家',desc:'集齐6个BOSS图鉴',check:d=>Object.keys(d.collections||{}).length>=6},
+  {id:'lv5',name:'嘴仗达人',desc:'达到5级',check:d=>d.level>=5},
+  {id:'lv10',name:'吵架大师',desc:'达到10级',check:d=>d.level>=10},
+  {id:'daily7',name:'每日打卡王',desc:'完成7次每日挑战',check:d=>(d.dailyCount||0)>=7},
+  {id:'king',name:'天下第一',desc:'达到王者段位',check:d=>d.rank>=6},
+];
+
+// ═══════════ 每日挑战规则 ═══════════
+const DAILY_RULES = [
+  {id:'short',name:'字数限制',desc:'回应不能超过30字，超出伤害减半',check:t=>t.length<=30},
+  {id:'number',name:'数据为王',desc:'必须包含数字，否则伤害减半',check:t=>/\d/.test(t)},
+  {id:'question',name:'以问制问',desc:'必须以问号结尾，否则伤害减半',check:t=>t.endsWith('？')||t.endsWith('?')},
+  {id:'polite',name:'先礼后兵',desc:'必须包含"但是/不过/同时"，否则伤害减半',check:t=>/但是|不过|同时/.test(t)},
+  {id:'no_weak',name:'绝不示弱',desc:'不能包含"可能/也许/大概/算了"，否则伤害减半',check:t=>!/可能|也许|大概|算了|随便/.test(t)},
+  {id:'evidence',name:'摆出证据',desc:'必须包含"根据/合同/记录/证据"之一',check:t=>/根据|合同|记录|证据|规定/.test(t)},
+];
+
+// ═══════════ 工具 ═══════════
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function beep(freq,dur,type,vol){
+  try{
+    beep._c=beep._c||new (window.AudioContext||window.webkitAudioContext)();
+    const c=beep._c;if(c.state==='suspended')c.resume();
+    const o=c.createOscillator(),g=c.createGain();
+    o.type=type||'square';o.frequency.value=freq;
+    g.gain.value=vol||0.04;
+    o.connect(g);g.connect(c.destination);
+    o.start();g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+dur);
+    o.stop(c.currentTime+dur);
+  }catch(e){}
+}
+
+// ═══════════ 玩家数据 ═══════════
+function defaultData(){
+  return {rank:0,stars:0,winStreak:0,bestStreak:0,xp:0,level:1,
+    totalWins:0,totalBattles:0,bossWins:{},collections:{},
+    titles:[],equippedTitle:null,history:[],hasPerfect:false,
+    lastDaily:null,dailyCount:0};
+}
+function loadData(){
+  try{
+    let d=JSON.parse(localStorage.getItem('arg_train_data')||'null');
+    if(!d)return defaultData();
+    // 迁移旧数据
+    if(d.rank===undefined){
+      const old=Object.assign(defaultData(),d);
+      // 旧wins映射到rank
+      if(d.wins!==undefined){
+        for(let i=RANKS.length-1;i>=0;i--){if(d.wins>=[0,3,6,10,15,20,28][i]){old.rank=i;break;}}
+      }
+      old.stars=0;old.xp=old.xp||0;old.level=old.level||1;
+      old.collections=old.collections||{};old.titles=old.titles||[];
+      old.hasPerfect=false;old.lastDaily=null;old.dailyCount=0;
+      d=old;
+    }
+    d=Object.assign(defaultData(),d);
+    if(typeof d.bossWins==='string')d.bossWins={};  // 修复旧bug写坏的数据
+    return d;
+  }catch(e){return defaultData();}
+}
+function saveData(d){localStorage.setItem('arg_train_data',JSON.stringify(d));}
+
+function getRank(){const d=loadData();return RANKS[Math.min(d.rank,RANKS.length-1)];}
+function xpForNext(level){return level*100;}
+function applyXP(d,amount){
+  d.xp+=amount;
+  let leveled=false;const newCards=[];
+  while(d.xp>=xpForNext(d.level)){
+    d.xp-=xpForNext(d.level);d.level++;leveled=true;
+    CARDS.filter(c=>c.unlockLevel===d.level).forEach(c=>newCards.push(c.name));
+  }
+  return{leveled,newCards,level:d.level};
+}
+
+// ═══════════ 每日挑战 ═══════════
+function getDaily(){
+  const today=new Date().toISOString().substring(0,10);
+  // 用日期做种子
+  let seed=0;for(let i=0;i<today.length;i++)seed=((seed<<5)-seed)+today.charCodeAt(i);
+  seed=Math.abs(seed);
+  const boss=BOSSES[seed%BOSSES.length];
+  const rule=DAILY_RULES[Math.floor(seed/100)%DAILY_RULES.length];
+  const d=loadData();
+  return{date:today,boss,rule,done:d.lastDaily===today};
+}
+
+// ═══════════ 关键词评分 ═══════════
+function evaluateReply(text,boss){
+  const t=text.trim();const len=t.length;
+  if(len<4)return{score:5,strong:5,logic:5,polite:5,tag:'weak',tagText:'太短',damage:0,comment:'说了等于没说。'};
+  let strong=0,logic=0,polite=0;
+  ['必须','要求','明确','不会接受','不能这样','不合理','现在就','马上','坚决','拒绝','不接受','不可以','没有道理','凭什么','我要','我需要'].forEach(w=>{if(t.includes(w))strong+=12;});
+  ['可能','也许','大概','不好意思','随便','都行','算了','好吧','是不是可以','能不能麻烦'].forEach(w=>{if(t.includes(w))strong-=6;});
+  if(/[!！]{2,}/.test(t))strong+=5;
+  if(len>15&&len<120)strong+=8;
+  if(len>200)strong-=5;
+  ['根据','合同','法律','劳动法','数据','事实','规定','流程','规则','标准','白纸黑字','截图','录音','记录','证据','统计'].forEach(w=>{if(t.includes(w))logic+=10;});
+  const nums=t.match(/\d+/g);
+  if(nums&&nums.length>=2)logic+=12;else if(nums&&nums.length===1)logic+=6;
+  if(/因为|所以|如果|那么/.test(t))logic+=8;
+  ['理解','感谢','我知道','但是','不过','同时','我明白','谢谢','我们','沟通','建议'].forEach(w=>{if(t.includes(w))polite+=8;});
+  ['滚','傻逼','废物','你有病','神经病','蠢','白痴','脑残'].forEach(w=>{if(t.includes(w))polite-=25;strong+=5;});
+  if(/理解|明白|知道/.test(t)&&/但是|不过|同时/.test(t)){polite+=15;logic+=5;}
+  strong=Math.max(0,Math.min(100,strong+30));
+  logic=Math.max(0,Math.min(100,logic+15));
+  polite=Math.max(0,Math.min(100,polite+35));
+  let weakBonus=0;
+  if(boss.weakness==='logic')weakBonus=logic*.3;
+  else if(boss.weakness==='polite')weakBonus=polite*.3;
+  else if(boss.weakness==='strong')weakBonus=strong*.3;
+  else if(boss.weakness==='direct'){['直接说','明确','挑明','直说','坦白','说白了'].forEach(w=>{if(t.includes(w))weakBonus+=12;});weakBonus=Math.min(30,weakBonus)+strong*.1;}
+  const score=Math.max(0,Math.min(100,Math.round(strong*.35+logic*.35+polite*.3+weakBonus)));
+  let tag,tagText;
+  if(score>=85){tag='perfect';tagText='完美回击';}
+  else if(strong>=70&&logic>=50){tag='strong';tagText='攻势凶猛';}
+  else if(logic>=70){tag='logic';tagText='逻辑严密';}
+  else if(polite>=70&&strong>=50){tag='polite';tagText='有礼有节';}
+  else if(score<30){tag='weak';tagText='太软了';}
+  else{tag='polite';tagText='中规中矩';}
+  let damage=Math.round(score*.35);
+  if(score>=85)damage=Math.round(damage*1.8);
+  let comment;
+  if(score>=85)comment='漂亮！直接打在痛点上。';
+  else if(score>=65)comment='不错，对方接不住了。';
+  else if(score>=45)comment='还行，但可以更犀利。';
+  else if(score>=25)comment='有点软，没伤到对方。';
+  else comment='这回合你输了。';
+  return{score,strong:Math.round(strong),logic:Math.round(logic),polite:Math.round(polite),tag,tagText,damage,comment};
+}
+
+// ═══════════ LLM ═══════════
+const LLM_CONFIG={baseUrl:'https://open.bigmodel.cn/api/paas/v4',model:'GLM-4-Flash'};
+function getApiKey(){return localStorage.getItem('arg_train_api_key')||'';}
+function hasApiKey(){return getApiKey().length>0;}
+function showSettings(){document.getElementById('apiKeyInput').value=getApiKey();updateApiStatus();showScreen('settingsScreen');}
+function updateApiStatus(ok){
+  const el=document.getElementById('apiStatus');
+  if(hasApiKey()){
+    if(ok===true){el.innerHTML='<span style="color:var(--green)">✅ 已连接 GLM-Flash（AI动态模式）</span>';}
+    else if(ok===false){el.innerHTML='<span style="color:var(--red)">⚠️ Key已保存但连接失败</span>';}
+    else{el.innerHTML='<span style="color:var(--blue)">🔵 Key已保存，下次战斗测试</span>';}
+  }else{el.innerHTML='<span style="color:var(--dim)">离线模式（关键词评分）</span>';}
+}
+function saveApiKey(){
+  const key=document.getElementById('apiKeyInput').value.trim();
+  if(!key){alert('请输入API Key');return;}
+  localStorage.setItem('arg_train_api_key',key);
+  callLLM('回复OK',100).then(()=>{updateApiStatus(true);alert('连接成功！');})
+    .catch(e=>{updateApiStatus(false);alert('连接失败：'+(e.message||'')+'\n将使用离线模式');});
+}
+function clearApiKey(){localStorage.removeItem('arg_train_api_key');updateApiStatus();}
+async function callLLM(systemPrompt,maxTokens,messages){
+  const key=getApiKey();if(!key)throw new Error('无API Key');
+  const msgs=messages||[{role:'user',content:systemPrompt}];
+  const resp=await fetch(LLM_CONFIG.baseUrl+'/chat/completions',{
+    method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({model:LLM_CONFIG.model,messages:msgs,max_tokens:maxTokens||300,temperature:.85}),
+    signal:AbortSignal.timeout(12000),
+  });
+  if(!resp.ok){const e=await resp.text().catch(()=>'');throw new Error('API '+resp.status+': '+e.substring(0,100));}
+  const data=await resp.json();
+  const content=data.choices?.[0]?.message?.content?.trim();
+  if(!content)throw new Error('空响应');
+  return content;
+}
+async function llmBossReply(boss,conversation,isPhase2){
+  const convo=conversation.map(m=>(m.speaker==='enemy'?boss.name+'（对手）':'玩家')+'：'+m.text).join('\n');
+  const desc=isPhase2?boss.desc2:boss.desc;
+  const prompt=`你是吵架训练游戏BOSS"${boss.name}"。
+角色：${desc}
+${isPhase2?'你已经进入狂暴阶段，情绪激动，说话更激烈！':''}
+对话：
+${convo}
+规则：根据玩家的话回击，保持角色性格。玩家说得好→心虚转移话题；说得差→乘胜追击。60字内，口语化，只输出你说的话。`;
+  return await callLLM(null,200,[{role:'user',content:prompt}]);
+}
+async function llmEvaluate(boss,conversation,playerReply,isPhase2){
+  const convo=conversation.map(m=>(m.speaker==='enemy'?boss.name:'玩家')+'：'+m.text).join('\n');
+  const prompt=`你是吵架训练游戏裁判，评价玩家回击。
+对手"${boss.name}"：${isPhase2?boss.desc2:boss.desc}
+对手弱点：${boss.weakLabel}
+对话：
+${convo}
+玩家说：「${playerReply}」
+三维评分(0-100)：strong(攻势)、logic(逻辑)、polite(体面)
+另给：score(综合0-100)、damage(伤害,score的30-50%,85+暴击)、comment(20字评语要有梗)、tagText(标签)
+只输出JSON：{"strong":70,"logic":60,"polite":80,"score":75,"damage":25,"comment":"打得漂亮","tagText":"攻势凶猛"}`;
+  const raw=await callLLM(null,250,[{role:'user',content:prompt}]);
+  const m=raw.match(/\{[\s\S]*\}/);if(!m)throw new Error('JSON解析失败');
+  const p=JSON.parse(m[0]);
+  const sc=Math.max(0,Math.min(100,parseInt(p.score)||50));
+  const rawDmg=Math.max(0,parseInt(p.damage)||15);
+  return{score:sc,strong:Math.max(0,Math.min(100,parseInt(p.strong)||50)),
+    logic:Math.max(0,Math.min(100,parseInt(p.logic)||50)),
+    polite:Math.max(0,Math.min(100,parseInt(p.polite)||50)),
+    damage:Math.min(35,rawDmg),  // 夹住AI伤害，防止一把打死
+    comment:String(p.comment||'').substring(0,40),
+    tagText:String(p.tagText||'中规中矩').substring(0,10),
+    tag:sc>=85?'perfect':sc<30?'weak':'polite',source:'ai'};
+}
+
+// ═══════════ 游戏状态 ═══════════
+let G={};
+let battleId=0;
+
+// ═══════════ 画面 ═══════════
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function showTitle(){
+  const d=loadData();const rank=getRank();
+  document.getElementById('rankName').textContent=rank.icon+' '+rank.name;
+  document.getElementById('starDisplay').textContent='★'.repeat(d.stars)+'☆'.repeat(3-d.stars);
+  document.getElementById('streakDisplay').textContent=d.winStreak;
+  document.getElementById('levelDisplay').textContent=d.level;
+  document.getElementById('collDisplay').textContent=Object.keys(d.collections||{}).length+'/6';
+  const xpPct=Math.round(d.xp/xpForNext(d.level)*100);
+  document.getElementById('xpFill').style.width=xpPct+'%';
+  document.getElementById('xpText').textContent=`Lv.${d.level} · ${d.xp}/${xpForNext(d.level)} XP`;
+  // 称号
+  const tEl=document.getElementById('equippedTitle');
+  if(d.equippedTitle){tEl.style.display='inline-block';tEl.textContent=d.equippedTitle;}
+  else tEl.style.display='none';
+  // 每日
+  const daily=getDaily();
+  const dc=document.getElementById('dailyCard');
+  if(daily.done){dc.classList.add('done');document.getElementById('dailyBody').textContent=`✅ 今日已完成：${daily.boss.name} · ${daily.rule.name}`;document.getElementById('dailyReward').textContent='明天再来';document.getElementById('dailyGoBtn').style.display='none';}
+  else{dc.classList.remove('done');document.getElementById('dailyBody').innerHTML=`挑战 <b>${daily.boss.avatar} ${daily.boss.name}</b> · <b>${daily.rule.name}</b><br><span style="color:var(--dim);font-size:12px">${daily.rule.desc}</span>`;document.getElementById('dailyReward').textContent='奖励：双倍段位分 + 双倍经验';document.getElementById('dailyGoBtn').style.display='';}
+  showScreen('titleScreen');
+}
+function startDailyBattle(){
+  const daily=getDaily();
+  if(daily.done){alert('今日挑战已完成，明天再来！');return;}
+  const d=loadData();
+  if(d.level<daily.boss.unlockAt){alert(`需达到 Lv.${daily.boss.unlockAt} 才能挑战该BOSS`);return;}
+  startBattle(daily.boss,true);
+}
+function showSelect(){
+  const d=loadData();const daily=getDaily();
+  const grid=document.getElementById('bossGrid');grid.innerHTML='';
+  BOSSES.forEach(b=>{
+    const unlocked=d.level>=b.unlockAt||(b.unlockAt===0);
+    const isDaily=daily.boss.id===b.id&&!daily.done;
+    const wc=(d.bossWins&&d.bossWins[b.id])||0;
+    const card=document.createElement('div');
+    card.className='boss-card'+(unlocked?'':' locked');
+    card.innerHTML=`
+      ${wc>0?`<div class="wc">通关×${wc}</div>`:''}
+      <div class="avatar">${b.avatar}</div>
+      <div class="name">${b.name}${isDaily?' <span style="color:var(--gold);font-size:11px">📅每日</span>':''}</div>
+      <div class="btitle">${b.title}</div>
+      <div class="desc">${b.desc}</div>
+      <div class="bstats">HP <span>${b.hp}</span> · 难度 <span>${'★'.repeat(b.difficulty)}</span></div>
+      <div class="weak">${unlocked?b.weakLabel:'🔒 需 Lv.'+b.unlockAt+' 解锁'}</div>`;
+    if(unlocked)card.onclick=()=>startBattle(b,isDaily);
+    grid.appendChild(card);
+  });
+  showScreen('selectScreen');
+}
+function showHistory(){
+  const d=loadData();const list=document.getElementById('historyList');
+  if(!d.history||!d.history.length){list.innerHTML='<div class="history-empty">还没有战绩</div>';}
+  else{list.innerHTML=d.history.slice(-30).reverse().map(h=>`
+    <div class="history-item">
+      <div class="h-avatar">${h.avatar||'❓'}</div>
+      <div class="h-info"><div class="h-name">${esc(h.bossName)}</div><div class="h-meta">${h.date} · ${h.turns}回合 · ${h.score}分${h.daily?' · 📅':''}</div></div>
+      <div class="h-result ${h.win?'win':'lose'}">${h.win?'胜利':'战败'}</div>
+    </div>`).join('');}
+  showScreen('historyScreen');
+}
+function clearHistory(){if(confirm('清空所有战绩？段位等级也会重置！')){localStorage.removeItem('arg_train_data');location.reload();}}
+function showCollection(){
+  const d=loadData();
+  // 称号
+  const tList=document.getElementById('titleList');tList.innerHTML='';
+  TITLES.forEach(t=>{
+    const unlocked=(d.titles||[]).includes(t.id);
+    const equipped=d.equippedTitle===t.name;
+    const chip=document.createElement('div');
+    chip.className='title-chip'+(unlocked?' unlocked':' locked')+(equipped?' equipped':'');
+    chip.textContent=(unlocked?'':'🔒 ')+t.name+(equipped?' ✓':'');
+    chip.title=t.desc;
+    if(unlocked&&!equipped){chip.onclick=()=>{d.equippedTitle=t.name;saveData(d);showCollection();showTitle();};}
+    tList.appendChild(chip);
+  });
+  // 图鉴
+  const grid=document.getElementById('collGrid');grid.innerHTML='';
+  BOSSES.forEach(b=>{
+    const c=(d.collections||{})[b.id];
+    const card=document.createElement('div');card.className='coll-card';
+    card.innerHTML=`
+      <div class="cc-head"><span class="cc-avatar">${b.avatar}</span><span class="cc-name">${b.name}</span>
+      ${c&&c.timesDefeated?`<span class="cc-count">击败×${c.timesDefeated}</span>`:''}</div>
+      ${c&&c.bestQuote?`<div class="cc-quote"><span class="qlabel">最强回击（${c.bestQuote.score}分）</span>${esc(c.bestQuote.text)}</div>`:'<div class="cc-empty">还没有收集到名场面</div>'}
+      ${c&&c.defeatLine?`<div class="cc-defeat">💬 "${esc(c.defeatLine)}"</div>`:''}`;
+    grid.appendChild(card);
+  });
+  showScreen('collectionScreen');
+}
+
+// ═══════════ 战斗 ═══════════
+function startBattle(boss,isDaily){
+  battleId++;
+  const d=loadData();
+  // 发牌
+  const unlockedCards=CARDS.filter(c=>d.level>=c.unlockLevel);
+  const shuffled=unlockedCards.sort(()=>Math.random()-.5);
+  const hand=shuffled.slice(0,Math.min(3,unlockedCards.length)).map(c=>({...c,used:false}));
+
+  // 每日规则
+  const daily=getDaily();
+  const dailyRule=(isDaily&&!daily.done)?daily.rule:null;
+
+  G={boss,enemyHp:boss.hp,enemyMaxHp:boss.hp,playerHp:100,playerMaxHp:100,
+    turn:1,history:[],scores:[],combo:0,maxCombo:0,
+    replyIndex:Math.floor(Math.random()*3),
+    hand,armedCard:null,pendingEffect:null,
+    bossPhase:1,isDaily:!!dailyRule,dailyRule,
+    skippedCounter:false};
+
+  document.getElementById('enemyName').textContent=boss.avatar+' '+boss.name;
+  document.getElementById('stageInfo').textContent=boss.title+(dailyRule?' · 📅'+dailyRule.name:'');
+  document.getElementById('turnInfo').textContent='回合 1';
+  document.getElementById('comboDisplay').textContent='';
+  updateHp();
+  document.getElementById('arena').innerHTML='';
+  document.getElementById('playerInput').value='';
+  document.getElementById('playerInput').disabled=false;
+  document.getElementById('sendBtn').disabled=false;
+  document.getElementById('tipsRow').innerHTML=boss.tips.map(t=>`<span class="tip-btn">${t}</span>`).join('');
+  renderHand();
+  if(dailyRule)addMsg('system','','📅 每日挑战规则：'+dailyRule.name+' — '+dailyRule.desc);
+
+  const opener=boss.openers[Math.floor(Math.random()*boss.openers.length)];
+  G.history.push({speaker:'enemy',text:opener});
+  addMsg('enemy',boss.name,opener);
+  showScreen('battleScreen');
+}
+
+function addMsg(type,speaker,text){
+  const arena=document.getElementById('arena');
+  const div=document.createElement('div');
+  div.className='msg '+type;
+  div.innerHTML=speaker?`<div class="speaker">${esc(speaker)}</div>${esc(text)}`:esc(text);
+  arena.appendChild(div);
+  arena.scrollTop=arena.scrollHeight;
+}
+function removeLoadingMsg(){
+  document.querySelectorAll('#arena .msg.system').forEach(m=>{
+    if(/裁判分析|组织语言/.test(m.textContent))m.remove();
+  });
+}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendReply();}}
+
+// 软键盘弹出时保持输入框可见
+function keepInputVisible(){
+  const ta=document.getElementById('playerInput');
+  if(ta&&document.getElementById('battleScreen').classList.contains('active')){
+    setTimeout(()=>{try{ta.scrollIntoView({block:'nearest',behavior:'smooth'});}catch(e){}},300);
+  }
+}
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',keepInputVisible);
+}
+
+// 卡牌
+function renderHand(){
+  const el=document.getElementById('cardHand');
+  el.innerHTML='<span class="ch-label">手牌：</span>';
+  if(!G.hand||!G.hand.length){el.innerHTML+='<span style="font-size:11px;color:var(--dim)">无可用卡牌</span>';return;}
+  G.hand.forEach((c,i)=>{
+    const div=document.createElement('div');
+    div.className='rhet-card'+(c.used?' used':'')+(G.armedCard===i?' armed':'');
+    div.innerHTML=`${c.name}<span class="cdesc">${c.desc}</span>`;
+    if(!c.used){div.onclick=()=>armCard(i);}
+    el.appendChild(div);
+  });
+}
+function armCard(idx){
+  if(G.hand[idx].used)return;
+  if(G.armedCard===idx){G.armedCard=null;renderHand();return;}
+  G.armedCard=idx;renderHand();
+}
+function useArmedCard(){
+  if(G.armedCard===null)return null;
+  const card=G.hand[G.armedCard];
+  card.used=true;
+  G.armedCard=null;
+  renderHand();
+  return card;
+}
+
+function updateHp(){
+  const ePct=G.enemyHp/G.enemyMaxHp*100;
+  document.getElementById('enemyHpFill').style.width=ePct+'%';
+  document.getElementById('enemyHpFill').className='hp-fill enemy'+(G.bossPhase===2?' phase2':'');
+  document.getElementById('enemyHpText').textContent=`${G.enemyHp}/${G.enemyMaxHp}`;
+  document.getElementById('playerHpFill').style.width=(G.playerHp/G.playerMaxHp*100)+'%';
+  document.getElementById('playerHpText').textContent=`${G.playerHp}/${G.playerMaxHp}`;
+}
+function updateCombo(){
+  const el=document.getElementById('comboDisplay');
+  if(G.combo>=3){el.textContent=`🔥 连招 x${G.combo}`;el.className='combo-display hot';}
+  else if(G.combo>=1){el.textContent=`连招 x${G.combo}`;el.className='combo-display';}
+  else{el.textContent='';el.className='combo-display';}
+}
+function showDmg(val,type){
+  beep(type==='crit'?880:520,0.08,type==='crit'?'sawtooth':'square',0.05);
+  const el=document.createElement('div');
+  el.className='dmg-float '+(type||'hit');
+  el.textContent=(type==='crit'?'暴击 -':type==='combo'?'COMBO -':'-')+val;
+  el.style.left=(25+Math.random()*50)+'%';
+  el.style.top='30%';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1000);
+}
+function showHeal(val){
+  beep(660,0.1,'sine',0.04);beep(880,0.12,'sine',0.04);
+  const el=document.createElement('div');
+  el.className='dmg-float heal';el.textContent='+'+val;
+  el.style.left=(40+Math.random()*20)+'%';el.style.top='55%';
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1000);
+}
+function flashScreen(){const f=document.createElement('div');f.className='screen-flash';document.body.appendChild(f);setTimeout(()=>f.remove(),300);}
+function shakeEl(el){el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),300);}
+
+function fleeBattle(){if(confirm('撤退？这局不计战绩。')){battleId++;showSelect();}}
+
+// 发送
+function sendReply(){
+  const input=document.getElementById('playerInput');
+  const text=input.value.trim();
+  if(!text||G.enemyHp<=0||G.playerHp<=0)return;
+  input.value='';input.disabled=true;
+  document.getElementById('sendBtn').disabled=true;
+
+  // 用牌
+  const card=useArmedCard();
+  if(card){
+    // 即时效果
+    if(card.effect==='heal15'){
+      const heal=Math.min(15,G.playerMaxHp-G.playerHp);
+      G.playerHp+=heal;showHeal(heal);updateHp();
+      addMsg('system','','🃏 使用【'+card.name+'】恢复'+heal+'HP');
+    }else if(card.effect==='skip_counter'){
+      G.skippedCounter=true;
+      addMsg('system','','🃏 使用【'+card.name+'】——本回合对方无法反击');
+    }else if(card.effect==='no_counter'){
+      G.pendingEffect='no_counter';
+      addMsg('system','','🃏 使用【'+card.name+'】'+card.desc);
+    }else{
+      G.pendingEffect=card.effect;
+      addMsg('system','','🃏 使用【'+card.name+'】'+card.desc);
+    }
+  }
+
+  addMsg('player','你',text);
+  G.history.push({speaker:'player',text});
+
+  const myBattle=battleId;
+  const useAI=hasApiKey();
+  if(useAI)addMsg('system','','⏳ 裁判分析中...');
+
+  const evalP=useAI
+    ?llmEvaluate(G.boss,G.history.slice(0,-1),text,G.bossPhase===2).catch(()=>evaluateReply(text,G.boss))
+    :Promise.resolve(evaluateReply(text,G.boss));
+
+  evalP.then(ev=>{
+    if(myBattle!==battleId)return;
+    removeLoadingMsg();
+
+    // 卡牌效果修正（no_counter 留到 bossCounter 再消费，不能在这里清掉）
+    let dmgMul=1;
+    let forcedCrit=false;
+    if(G.pendingEffect&&G.pendingEffect!=='no_counter'){
+      switch(G.pendingEffect){
+        case'dmg15':dmgMul*=1.5;break;
+        case'dmg2x':dmgMul*=2;break;
+        case'logic25':ev.logic=Math.min(100,ev.logic+25);ev.score=Math.min(100,ev.score+12);ev.damage=Math.round(ev.damage*1.25);break;
+        case'guaranteed_crit':forcedCrit=true;break;
+        case'comeback':if(G.playerHp/G.playerMaxHp<0.3)dmgMul*=3;break;
+      }
+      G.pendingEffect=null;
+    }
+
+    // 每日规则修正
+    if(G.dailyRule&&!G.dailyRule.check(text)){
+      dmgMul*=0.5;
+      addMsg('system','','⚠️ 违反每日规则，伤害减半！');
+    }
+
+    // 连招
+    if(ev.score>=60){G.combo++;if(G.combo>G.maxCombo)G.maxCombo=G.combo;}
+    else G.combo=0;
+    updateCombo();
+    if(G.combo>=3)dmgMul*=2;  // 连招3+ = 2倍
+    if(G.combo===3){beep(740,0.1,'square',0.05);beep(988,0.15,'square',0.05);}
+
+    const isCrit=forcedCrit||ev.score>=85;
+    let finalDmg=Math.round(ev.damage*dmgMul);
+    if(forcedCrit&&ev.score<85)finalDmg=Math.round(finalDmg*1.6);
+    finalDmg=Math.min(finalDmg,60);  // 单次伤害上限
+
+    G.scores.push(ev);
+
+    if(finalDmg>0){
+      G.enemyHp=Math.max(0,G.enemyHp-finalDmg);
+      if(G.combo>=3)showDmg(finalDmg,'combo');
+      else showDmg(finalDmg,isCrit?'crit':'hit');
+      updateHp();
+      shakeEl(document.getElementById('arena'));
+      if(isCrit)flashScreen();
+    }
+
+    // BOSS二阶段
+    if(G.bossPhase===1&&G.enemyHp<=G.enemyMaxHp*0.5&&G.enemyHp>0){
+      G.bossPhase=2;
+      addMsg('system phase','','⚡ '+G.boss.name+' 进入狂暴阶段！ ⚡');
+      beep(220,0.3,'sawtooth',0.06);beep(165,0.4,'sawtooth',0.06);
+      updateHp();
+    }
+
+    // BOSS死亡
+    if(G.enemyHp<=0){
+      setTimeout(()=>{
+        if(myBattle!==battleId)return;
+        const defeat=G.bossPhase===2?G.boss.defeat2:G.boss.defeat;
+        addMsg('enemy',G.boss.name,defeat);
+        addMsg('system','','🎉 对手已被你说服！');
+        setTimeout(()=>{if(myBattle===battleId)endBattle(true);},1500);
+      },600);
+      return;
+    }
+
+    setTimeout(()=>{if(myBattle===battleId)bossCounter();},800);
+  });
+}
+
+function bossCounter(){
+  const boss=G.boss;const useAI=hasApiKey();const myBattle=battleId;
+
+  // 跳过反击的牌
+  if(G.skippedCounter){
+    G.skippedCounter=false;
+    addMsg('system','','🃏 沉默是金——对方无从反击！');
+    finishTurn(myBattle);
+    return;
+  }
+
+  if(useAI)addMsg('system','','⏳ 对方正在组织语言...');
+
+  const replyP=useAI
+    ?llmBossReply(boss,G.history,G.bossPhase===2).catch(()=>{
+        G.replyIndex=(G.replyIndex+1)%boss.replies.length;return boss.replies[G.replyIndex];})
+    :new Promise(r=>{setTimeout(()=>{G.replyIndex=(G.replyIndex+1)%boss.replies.length;r(boss.replies[G.replyIndex]);},500);});
+
+  replyP.then(reply=>{
+    if(myBattle!==battleId)return;
+    removeLoadingMsg();
+    addMsg('enemy',boss.name,reply);
+    G.history.push({speaker:'enemy',text:reply});
+
+    // 反击伤害
+    let counterDmg=0;
+    if(G.pendingEffect==='no_counter'){
+      G.pendingEffect=null;
+      addMsg('system','','🃏 反问——对方哑口无言！');
+    }else{
+      const lastScore=G.scores.length?G.scores[G.scores.length-1].score:50;
+      counterDmg=Math.max(3,Math.round((100-lastScore)*0.18+Math.random()*6));
+      if(G.bossPhase===2)counterDmg=Math.round(counterDmg*1.3);  // 狂暴加伤
+      counterDmg=Math.min(counterDmg,25);
+      G.playerHp=Math.max(0,G.playerHp-counterDmg);
+      beep(330,0.1,'sawtooth',0.05);
+      const el=document.createElement('div');
+      el.className='dmg-float hit';el.textContent='-'+counterDmg;
+      el.style.left=(30+Math.random()*40)+'%';el.style.bottom='35%';el.style.top='auto';
+      document.body.appendChild(el);setTimeout(()=>el.remove(),1000);
+      shakeEl(document.getElementById('playerHpFill').parentElement);
+    }
+    updateHp();
+    finishTurn(myBattle);
+  });
+}
+
+function finishTurn(myBattle){
+  if(myBattle!==battleId)return;
+  G.turn++;
+  document.getElementById('turnInfo').textContent='回合 '+G.turn;
+
+  if(G.playerHp<=0){
+    setTimeout(()=>{
+      if(myBattle!==battleId)return;
+      addMsg('system','','💀 你的心态崩了……');
+      setTimeout(()=>{if(myBattle===battleId)endBattle(false);},1500);
+    },600);return;
+  }
+  if(G.turn>20){
+    setTimeout(()=>{
+      if(myBattle!==battleId)return;
+      addMsg('system','','⏰ 谈判超时……');
+      setTimeout(()=>{if(myBattle===battleId)endBattle(G.enemyHp<G.playerHp,true);},1500);
+    },600);return;
+  }
+  document.getElementById('playerInput').disabled=false;
+  document.getElementById('sendBtn').disabled=false;
+  document.getElementById('playerInput').focus({preventScroll:true});
+  keepInputVisible();
+}
+
+// ═══════════ 结算 ═══════════
+function endBattle(win,isTimeout){
+  battleId++;  // 锁住本场残留异步
+  const scores=G.scores;
+  const avg=k=>scores.length?Math.round(scores.reduce((s,x)=>s+(x[k]||0),0)/scores.length):0;
+  const aS=avg('strong'),aL=avg('logic'),aP=avg('polite'),overall=avg('score');
+  const perfect=scores.filter(s=>s.score>=85).length;
+
+  document.getElementById('resultTitle').textContent=win?'🎉 胜利！':(isTimeout?'⏰ 平局':'💀 战败');
+  document.getElementById('resultTitle').className=win?'win':'lose';
+  document.getElementById('resultSub').textContent=`${G.boss.avatar} ${G.boss.name} · ${G.turn}回合 · ${perfect}次完美 · 最高连招x${G.maxCombo}`;
+
+  const d=loadData();
+  const isDailyDone=d.lastDaily===new Date().toISOString().substring(0,10);
+  let dailyBonus=1;
+  if(G.isDaily&&!isDailyDone){dailyBonus=2;d.lastDaily=new Date().toISOString().substring(0,10);d.dailyCount=(d.dailyCount||0)+1;}
+
+  d.totalBattles++;
+  const rankBefore=d.rank;const starsBefore=d.stars;
+
+  if(win){
+    d.totalWins++;
+    if(!d.bossWins||typeof d.bossWins!=='object')d.bossWins={};
+    d.bossWins[G.boss.id]=(d.bossWins[G.boss.id]||0)+1;
+    d.winStreak++;
+    if(d.winStreak>d.bestStreak)d.bestStreak=d.winStreak;
+    // 星级：3连胜以上+2，否则+1
+    const starGain=(d.winStreak>=3?2:1)*dailyBonus;
+    d.stars+=starGain;
+    while(d.stars>=3){d.stars-=3;d.rank=Math.min(d.rank+1,RANKS.length-1);}
+    if(!d.history)d.history=[];
+    d.history.push({bossName:G.boss.name,avatar:G.boss.avatar,date:new Date().toISOString().substring(0,10),turns:G.turn,score:overall,win:true,daily:G.isDaily});
+  }else{
+    if(!isTimeout){d.winStreak=0;if(d.stars>0)d.stars--;}
+    if(!d.history)d.history=[];
+    d.history.push({bossName:G.boss.name,avatar:G.boss.avatar,date:new Date().toISOString().substring(0,10),turns:G.turn,score:overall,win:false,daily:G.isDaily});
+  }
+  if(d.history.length>50)d.history=d.history.slice(-50);
+
+  // XP（同一份数据上算，避免被后面的 saveData 覆盖）
+  const baseXP=win?30+Math.round(overall/2):10+Math.round(overall/4);
+  const xpGain=baseXP*dailyBonus;
+
+  // 图鉴收集
+  if(!d.collections)d.collections={};
+  const playerMsgs=G.history.filter(h=>h.speaker==='player');
+  scores.forEach((s,i)=>{
+    if(playerMsgs[i]){
+      const c=d.collections[G.boss.id]||{timesDefeated:0};
+      if(!c.bestQuote||s.score>c.bestQuote.score){
+        c.bestQuote={text:playerMsgs[i].text.substring(0,80),score:s.score};
+      }
+      d.collections[G.boss.id]=c;
+    }
+  });
+  if(win){
+    const c=d.collections[G.boss.id]||{};
+    c.timesDefeated=(c.timesDefeated||0)+1;
+    c.defeatLine=G.bossPhase===2?G.boss.defeat2:G.boss.defeat;
+    d.collections[G.boss.id]=c;
+  }
+  if(overall>=90)d.hasPerfect=true;
+
+  // XP + 等级
+  const xpResult=applyXP(d,xpGain);
+
+  // 称号
+  if(!d.titles)d.titles=[];
+  const newTitles=[];
+  TITLES.forEach(t=>{
+    if(!d.titles.includes(t.id)&&t.check(d)){d.titles.push(t.id);newTitles.push(t.name);}
+  });
+
+  saveData(d);
+
+  // UI
+  document.getElementById('rankUp').style.display='none';
+  document.getElementById('levelUp').style.display='none';
+  document.getElementById('newCards').style.display='none';
+
+  if(d.rank>rankBefore){
+    document.getElementById('rankUp').style.display='block';
+    document.getElementById('rankUp').textContent=`⬆ 段位晋升：${RANKS[rankBefore].icon} → ${getRank().icon} ${getRank().name}！`;
+    beep(660,0.12,'square',0.05);beep(880,0.12,'square',0.05);beep(1100,0.2,'square',0.05);
+  }
+  if(xpResult.leveled){
+    document.getElementById('levelUp').style.display='block';
+    document.getElementById('levelUp').textContent=`🎉 升级！Lv.${xpResult.level}`;
+    beep(523,0.1,'sine',0.05);beep(659,0.1,'sine',0.05);beep(784,0.2,'sine',0.05);
+    if(xpResult.newCards.length){
+      document.getElementById('newCards').style.display='block';
+      document.getElementById('newCards').textContent='🃏 新卡牌解锁：'+xpResult.newCards.join('、');
+    }
+  }
+  if(newTitles.length){
+    const nc=document.getElementById('newCards');
+    nc.style.display='block';
+    nc.textContent=(nc.textContent?nc.textContent+' · ':'')+'🏆 新称号：'+newTitles.join('、');
+  }
+  document.getElementById('xpGain').textContent=`+${xpGain} XP${dailyBonus>1?'（每日双倍）':''}`;
+
+  // 分数条
+  ['scS','scL','scP','scO'].forEach(id=>document.getElementById(id).style.width='0%');
+  ['vS','vL','vP','vO'].forEach(id=>document.getElementById(id).textContent='0');
+  setTimeout(()=>{
+    document.getElementById('scS').style.width=aS+'%';document.getElementById('vS').textContent=aS;
+    document.getElementById('scL').style.width=aL+'%';document.getElementById('vL').textContent=aL;
+    document.getElementById('scP').style.width=aP+'%';document.getElementById('vP').textContent=aP;
+    document.getElementById('scO').style.width=overall+'%';document.getElementById('vO').textContent=overall;
+  },200);
+
+  // 复盘
+  const rl=document.getElementById('reviewList');rl.innerHTML='';
+  let pIdx=0;
+  G.history.forEach(h=>{
+    if(h.speaker==='player'){
+      const ev=scores[pIdx++];const good=ev&&ev.score>=50;
+      const div=document.createElement('div');
+      div.className='review-item '+(good?'good':'bad');
+      div.innerHTML=`<div class="rv-label">${good?'✓ 打得好':'✗ 可改进'} · ${ev?ev.score:0}分${ev&&ev.source==='ai'?' ·AI':''}</div>
+        <div>你说：${esc(h.text.substring(0,60))}${h.text.length>60?'…':''}</div>
+        <div style="color:var(--dim);margin-top:3px">${esc(ev?ev.comment:'')}</div>`;
+      rl.appendChild(div);
+    }
+  });
+  if(!rl.children.length)rl.innerHTML='<div class="review-item">无复盘</div>';
+
+  document.getElementById('finalMsg').textContent=genFinalMsg(G.boss);
+  if(hasApiKey())genFinalMsgAI(G.boss);
+  showScreen('resultScreen');
+}
+
+// AI生成本场专属推荐话术（失败保留模板）
+async function genFinalMsgAI(boss){
+  try{
+    const convo=G.history.map(m=>(m.speaker==='enemy'?boss.name:'玩家')+'：'+m.text).join('\n');
+    const prompt=`吵架训练复盘。对手"${boss.name}"（${boss.desc}）。
+对话：
+${convo}
+根据这局对话，写一段可直接复制的回击话术：摆事实、讲依据、亮底线，80-150字，口语化有底气。只输出话术本身。`;
+    const out=await callLLM(null,400,[{role:'user',content:prompt}]);
+    const el=document.getElementById('finalMsg');
+    if(el&&document.getElementById('resultScreen').classList.contains('active')){
+      el.textContent=out;
+      const b=document.querySelector('.copy-btn');
+      if(b){b.textContent='复制';b.onclick=copyFinal;}
+    }
+  }catch(e){}
+}
+
+function genFinalMsg(boss){
+  const t={boss1:`领导，感谢认可。关于薪资加班，我想正式沟通：\n1. 过去半年我承担X个项目，累计加班XX小时\n2. 根据劳动合同法，加班应支付1.5-3倍工资\n3. 希望本周有明确调薪方案，书面确认\n\n我希望合作建立在透明基础上。您看什么时间详谈？`,
+    boss2:`谢谢关心，我知道您为我好。但感情急不来，我有自己的节奏。今天开心吃饭，下次我给您做拿手菜！（微笑转移话题）`,
+    boss3:`你刚才那句话我听得不舒服，有意见可以直接说，我喜欢有话直说。当面沟通清楚，比背后猜来猜去强，你说呢？`,
+    boss4:`房东您好，根据合同第X条，正常磨损不扣押金。墙上印子属正常居住痕迹。我要求全额退押金XXXX元，协商不成会向住建委和12345投诉。希望和平解决。`,
+    boss5:`我理解您的不满。根据售后流程，X天内质量问题支持退换。已加急处理，预计X小时给出方案，工单号全程可追踪。超时会升级主管。`,
+    boss6:`我听到你说的了。但明确几点：\n1. 我的价值不由你评价决定\n2. 用"离开我就没人要"留人，这不是爱是控制\n3. 我需要平等尊重的关系\n\n愿意改变沟通方式可以继续，否则各自冷静更好。`};
+  return t[boss.id]||'摆事实、讲道理、亮底线，冷静但坚定。';
+}
+function copyFinal(){
+  const text=document.getElementById('finalMsg').textContent;
+  navigator.clipboard.writeText(text).then(()=>{const b=document.querySelector('.copy-btn');b.textContent='✓';setTimeout(()=>b.textContent='复制',1500);})
+    .catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();});
+}
+
+// ═══════════ 初始化 ═══════════
+showTitle();
+</script>
+</body>
+</html>
